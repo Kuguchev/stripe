@@ -16,6 +16,7 @@
         "build": "encore production --progress"
     },
     "dependencies": {
+        "@stripe/stripe-js": "^1.29.0",
         "bootstrap": "^5.1.3"
     }
 }
