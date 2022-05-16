@@ -8,10 +8,7 @@
     <link rel="stylesheet" href="{{ asset('css/stripe/checkout.css') }}" />
 {% endblock %}
 
-{% block javascripts %}
-    <script src="https://js.stripe.com/v3/"></script>
-    <script src="{{ asset('js/stripe/checkout.js') }}" defer></script>
-{% endblock %}
+{% block body %}
     <!-- Display a payment form -->
     <form id="payment-form">
         <div id="payment-element">
@@ -23,5 +20,21 @@
         </button>
         <div id="payment-message" class="hidden"></div>
     </form>
-{% block body %}
+{% endblock %}
+
+{% block javascripts %}
+    <script src="https://js.stripe.com/v3/"></script>
+
+    <script>
+        const stripe = Stripe("{{ pk_test }}");
+
+        // The items the customer wants to buy
+        let items = [];
+
+        {% for product in products %}
+            items.push({ id: "{{ product.stripeId }}"});
+        {% endfor %}
+    </script>
+
+    <script src="{{ asset('js/stripe/checkout.js') }}" defer></script>
 {% endblock %}

@@ -2,23 +2,28 @@
 
 namespace App\Controller;
 
-use Stripe\Event;
+use App\Entity\Product;
+use App\Repository\ProductRepository;
+use Doctrine\ORM\EntityManagerInterface;
+use Stripe\StripeClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Service\StripeService;
-use Symfony\Component\Serializer\SerializerInterface;
 
 class PaymentController extends AbstractController
 {
 
     private StripeService $stripeService;
+    private ProductRepository $productRepository;
+    private EntityManagerInterface $em;
 
-    public function __construct(StripeService $stripeService)
+    public function __construct(StripeService $stripeService, ProductRepository $productRepository, EntityManagerInterface $em)
     {
         $this->stripeService = $stripeService;
+        $this->productRepository = $productRepository;
+        $this->em = $em;
     }
 
     /**
@@ -27,10 +32,28 @@ class PaymentController extends AbstractController
     public function intent(Request $request): Response
     {
         if ($request->getMethod() === "POST") {
-            return $this->json($this->stripeService->paymentIntent());
-        } else {
-            return $this->render('stripe/checkout.html.twig');
+            return $this->json($this->stripeService->paymentIntent($request));
         }
+
+//        $stripe = new StripeClient($_ENV['STRIPE_SECRET_KEY_TEST']);
+//        $products = $stripe->products->all()->toArray();
+//
+//        foreach ($products['data'] as $product) {
+//
+//            $addProduct = (new Product())
+//            ->setStripeId($product['id'])
+//            ->setName($product['name'])
+//            ->setDescription($product['description']);
+//
+//            $this->em->persist($addProduct);
+//        }
+//        $this->em->flush();
+
+        $products = $this->productRepository->findAll();
+
+        return $this->render('stripe/checkout.html.twig', [
+            'products' => $products,
+        ]);
     }
 
     /**
