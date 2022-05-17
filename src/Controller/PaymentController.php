@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Price;
 use App\Entity\Product;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -35,11 +36,12 @@ class PaymentController extends AbstractController
             return $this->json($this->stripeService->paymentIntent($request));
         }
 
+        // FOR DEBUG
 //        $stripe = new StripeClient($_ENV['STRIPE_SECRET_KEY_TEST']);
+//
 //        $products = $stripe->products->all()->toArray();
 //
 //        foreach ($products['data'] as $product) {
-//
 //            $addProduct = (new Product())
 //            ->setStripeId($product['id'])
 //            ->setName($product['name'])
@@ -59,10 +61,20 @@ class PaymentController extends AbstractController
     /**
      * @Route("/webhook", name="app.payment.webhook", methods={"POST"})
      */
-    public function hook(Request $request)
+    public function hook(Request $request): Response
     {
         $this->stripeService->webhookHandler($request);
 
         return (new Response())->setStatusCode(Response::HTTP_OK);
+    }
+
+    /**
+     * @Route("/invoice", name="app.payment.invoice", methods={"GET"})
+     */
+    public function invoce():Response
+    {
+        $this->stripeService->sendInvoice('kuguchev.dm@gmail.com', 'Car', '1215000.00');
+
+        return new Response();
     }
 }

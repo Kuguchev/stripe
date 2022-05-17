@@ -4,11 +4,18 @@ namespace App\Service;
 
 use App\Exception\PaymentIntentException;
 use App\Model\OrderModel;
+use App\Repository\CustomerRepository;
+use App\Repository\PriceRepository;
+use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Stripe\Customer;
 use Stripe\Event;
 use Stripe\Exception\SignatureVerificationException;
+use Stripe\Invoice;
+use Stripe\InvoiceItem;
 use Stripe\PaymentIntent;
+use Stripe\Price;
+use Stripe\Product;
 use Stripe\Stripe;
 use Stripe\StripeClient;
 use Stripe\Webhook;
@@ -21,11 +28,22 @@ class StripeService
     private $endpointSecretKey;
     private SerializerInterface $serializer;
     private EntityManagerInterface $em;
+    private CustomerRepository $customerRepository;
+    private PriceRepository $priceRepository;
+    private ProductRepository $productRepository;
 
-    public function __construct(SerializerInterface $serializer, EntityManagerInterface $em)
+    public function __construct(
+        SerializerInterface $serializer,
+        EntityManagerInterface $em,
+        CustomerRepository $customerRepository,
+        PriceRepository $priceRepository,
+        ProductRepository $productRepository)
     {
         $this->serializer = $serializer;
         $this->em = $em;
+        $this->customerRepository = $customerRepository;
+        $this->priceRepository = $priceRepository;
+        $this->productRepository = $productRepository;
 
         $this->endpointSecretKey = $_ENV['ENDPOINT_SECRET_KEY_CLI'];
 
@@ -101,12 +119,13 @@ class StripeService
             } break;
             case 'customer.created':
             {
-                /** @var Customer $newCustomer */
-                $newCustomer = $event->data->object;
-
-                $newCustomerDB = (new \App\Entity\Customer())->setStripeId($newCustomer->id);
-                $this->em->persist($newCustomerDB);
-                $this->em->flush();
+//                /** @var Customer $newCustomer */
+//                $newCustomer = $event->data->object;
+//                $newCustomerDB = (new \App\Entity\Customer())
+//                    ->setStripeId($newCustomer->id)
+//                    ->setEmail($newCustomer->email);
+//                $this->em->persist($newCustomerDB);
+//                $this->em->flush();
             } break;
             default:
                 // Unexpected event type
@@ -114,6 +133,7 @@ class StripeService
         }
 
     }
+
     private function handlePaymentIntentSucceeded(PaymentIntent $paymentIntent)
     {
         //TODO
@@ -123,6 +143,7 @@ class StripeService
     {
         //TODO
     }
+
     private function handlePaymentIntentCreated(PaymentIntent $paymentIntent)
     {
         //TODO
@@ -135,11 +156,106 @@ class StripeService
         $stripeClient = new StripeClient($this->privateKey);
 
         foreach ($items as $item) {
+            $product = $stripeClient->products->retrieve($item->getId());
+            $test = $stripeClient->products->retrieve($item->getId())->toArray();
             $default_price = $stripeClient->products->retrieve($item->getId())->default_price;
             $price = $stripeClient->prices->retrieve($default_price)->unit_amount_decimal;
             $amount += $price;
         }
 
         return $amount;
+    }
+
+    public function sendInvoice(string $email, string $productName, string $productPrice)
+    {
+        Stripe::setApiKey($this->privateKey);
+
+        // Customer
+        $customerId = null;
+        $customerFromDB = $this->customerRepository->findOneBy(['email' => $email]);
+
+        if ($customerFromDB === null) {
+            // Create a new Customer
+            $customer = Customer::create([
+                'email' => $email,
+                'name' => 'Dmitry Kuguchev',
+                'description' => 'Customer to invoice',
+            ]);
+
+            $customerToDB = (new \App\Entity\Customer())
+                ->setStripeId($customer->id)
+                ->setEmail($customer->email);
+
+            $this->em->persist($customerToDB);
+            $customerId = $customer->id;
+        } else {
+            $customerId = $customerFromDB->getStripeId();
+        }
+
+        // Product
+        $productId = null;
+        $productFromDB = $this->productRepository->findOneBy(['name' => $productName]);
+
+        if ($productFromDB === null) {
+            $product = Product::create([
+                'name' => $productName,
+                'description' => 'New Product!',
+            ]);
+
+            $productToDB = (new \App\Entity\Product())
+                ->setStripeId($product->id)
+                ->setName($productName)
+                ->setDescription($product->description);
+
+            $productId = $product->id;
+            $this->em->persist($productToDB);
+        } else {
+            $productId = $productFromDB->getStripeId();
+        }
+
+        // Price
+        $priceId = null;
+        $priceFromDB = $this->priceRepository->findOneBy(['unitAmount' => $productPrice]);
+
+        if ($priceFromDB === null) {
+            $price = Price::create([
+                'product' => $productId,
+                'unit_amount_decimal' => $productPrice,
+                'currency' => 'usd',
+            ]);
+
+            $priceToDB = (new \App\Entity\Price())
+                ->setStripeId($price->id)
+                ->setUnitAmount($price->unit_amount_decimal);
+
+            $priceId = $price->id;
+            $this->em->persist($priceToDB);
+        } else {
+            $priceId = $priceFromDB->getStripeId();
+        }
+
+
+        // Set a Default price to Product
+        Product::update($productId,
+        ['default_price' => $priceId]);
+
+
+        $this->em->flush();
+
+        // Create an Invoice Item with the Price, and Customer you want to charge
+        $invoceItem = InvoiceItem::create([
+            'customer' => $customerId,
+            'price' => $priceId,
+        ]);
+
+        // Create an Invoice
+        $invoce = Invoice::create([
+            'customer' => $customerId,
+            'pending_invoice_items_behavior' => 'exclude',
+            'collection_method' => Invoice::BILLING_SEND_INVOICE,
+            'days_until_due' => 14,
+        ]);
+        $id = $invoce->id;
+        $invoce->sendInvoice();
     }
 }

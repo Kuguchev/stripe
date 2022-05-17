@@ -22,6 +22,11 @@ class Customer
      */
     private $stripeId;
 
+    /**
+     * @ORM\Column(type="string", length=255)
+     */
+    private string $email;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -35,6 +40,18 @@ class Customer
     public function setStripeId(string $stripeId): self
     {
         $this->stripeId = $stripeId;
+
+        return $this;
+    }
+
+    public function getEmail(): string
+    {
+        return $this->email;
+    }
+
+    public function setEmail(string $email): self
+    {
+        $this->email = $email;
 
         return $this;
     }
