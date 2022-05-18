@@ -1,9 +1,6 @@
-
+{% extends 'base.html.twig' %}
 {% block title %}Accept a payment{% endblock %}
-{% block meta %}
-    <meta name="description" content="A demo of a payment on Stripe" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-{% endblock %}
+
 {% block stylesheets %}
     <link rel="stylesheet" href="{{ asset('css/stripe/checkout.css') }}" />
 {% endblock %}
