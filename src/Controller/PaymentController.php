@@ -5,9 +5,11 @@ namespace App\Controller;
 use App\Entity\LookupKey;
 use App\Form\LookupKeyType;
 use App\Repository\ProductRepository;
+use App\Service\StripeInvoiceService;
+use App\Service\StripePriceService;
+use App\Service\StripeProductService;
 use Doctrine\ORM\EntityManagerInterface;
 use PhpParser\Error;
-use Stripe\BillingPortal\Session;
 use Stripe\Event;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\Webhook;
@@ -16,7 +18,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Service\StripeService;
-use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Serializer\SerializerInterface;
 
 class PaymentController extends AbstractController
@@ -25,12 +26,25 @@ class PaymentController extends AbstractController
     private StripeService $stripeService;
     private ProductRepository $productRepository;
     private EntityManagerInterface $em;
+    private StripeProductService $productService;
+    private StripePriceService $priceService;
+    private StripeInvoiceService $invoiceService;
 
-    public function __construct(StripeService $stripeService, ProductRepository $productRepository, EntityManagerInterface $em)
+    public function __construct(
+        StripeService $stripeService,
+        ProductRepository $productRepository,
+        StripeProductService $productService,
+        StripePriceService $priceService,
+        StripeInvoiceService $invoiceService,
+        EntityManagerInterface $em)
     {
         $this->stripeService = $stripeService;
         $this->productRepository = $productRepository;
+        $this->productService = $productService;
+        $this->priceService = $priceService;
+        $this->invoiceService = $invoiceService;
         $this->em = $em;
+
     }
 
     /**
@@ -102,11 +116,25 @@ class PaymentController extends AbstractController
     }
 
     /**
-     * @Route("/invoice", name="app.payment.invoice", methods={"GET"})
+     * @Route("/send-invoice", name="app.payment.invoice", methods={"GET"})
      */
-    public function invoce():Response
+    public function invoice(): Response
     {
-        $this->stripeService->sendInvoice('kuguchev.dm@gmail.com', 'Car', '1215000.00');
+        // up to 250 items per invoice
+        for($i = 0; $i < 10; $i++) {
+            $this->invoiceService->createInvoiceItem('kuguchev.dm@gmail.com', 1000 * ($i + 1), 'usd', 'Item number' . ($i + 1), random_int(1, 3));
+        }
+        $invoice = $this->invoiceService->createInvoice('kuguchev.dm@gmail.com');
+
+        // up to 250 items per invoice
+        for($i = 0; $i < 10; $i++) {
+            $this->invoiceService->createInvoiceItem('kuguchev.dm@gmail.com', 1000 * ($i + 1), 'usd', 'Item number' . ($i + 1), random_int(1, 3));
+        }
+        $invoice = $this->invoiceService->createInvoice('kuguchev.dm@gmail.com');
+
+        $this->invoiceService->sendInvoice($invoice);
+
+
 
         return new Response();
     }

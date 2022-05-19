@@ -9,10 +9,7 @@ use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Stripe\BillingPortal\Session as BillingPortalSession;
 use Stripe\Checkout\Session as CheckoutSession;
-use Stripe\Customer;
 use Stripe\Event;
-use Stripe\Invoice;
-use Stripe\InvoiceItem;
 use Stripe\PaymentIntent;
 use Stripe\Price;
 use Stripe\Product;
@@ -57,8 +54,6 @@ class StripeService
 
     public function paymentIntent(Request $request): array
     {
-        Stripe::setApiKey($this->privateKey);
-
         /** @var OrderModel[] $items */
         $orderModel = $this->serializer->deserialize($request->getContent(), OrderModel::class,'json');
 
@@ -183,98 +178,6 @@ class StripeService
         }
 
         return $amount;
-    }
-
-    public function sendInvoice(string $email, string $productName, string $productPrice)
-    {
-        Stripe::setApiKey($this->privateKey);
-
-        // Customer
-        $customerId = null;
-        $customerFromDB = $this->customerRepository->findOneBy(['email' => $email]);
-
-        if ($customerFromDB === null) {
-            // Create a new Customer
-            $customer = Customer::create([
-                'email' => $email,
-                'name' => 'Dmitry Kuguchev',
-                'description' => 'Customer to invoice',
-            ]);
-
-            $customerToDB = (new \App\Entity\Customer())
-                ->setStripeId($customer->id)
-                ->setEmail($customer->email);
-
-            $this->em->persist($customerToDB);
-            $customerId = $customer->id;
-        } else {
-            $customerId = $customerFromDB->getStripeId();
-        }
-
-        // Product
-        $productId = null;
-        $productFromDB = $this->productRepository->findOneBy(['name' => $productName]);
-
-        if ($productFromDB === null) {
-            $product = Product::create([
-                'name' => $productName,
-                'description' => 'New Product!',
-            ]);
-
-            $productToDB = (new \App\Entity\Product())
-                ->setStripeId($product->id)
-                ->setName($productName)
-                ->setDescription($product->description);
-
-            $productId = $product->id;
-            $this->em->persist($productToDB);
-        } else {
-            $productId = $productFromDB->getStripeId();
-        }
-
-        // Price
-        $priceId = null;
-        $priceFromDB = $this->priceRepository->findOneBy(['unitAmount' => $productPrice]);
-
-        if ($priceFromDB === null) {
-            $price = Price::create([
-                'product' => $productId,
-                'unit_amount_decimal' => $productPrice,
-                'currency' => 'usd',
-            ]);
-
-            $priceToDB = (new \App\Entity\Price())
-                ->setStripeId($price->id)
-                ->setUnitAmount($price->unit_amount_decimal);
-
-            $priceId = $price->id;
-            $this->em->persist($priceToDB);
-        } else {
-            $priceId = $priceFromDB->getStripeId();
-        }
-
-
-        // Set a Default price to Product
-        Product::update($productId,
-        ['default_price' => $priceId]);
-
-
-        $this->em->flush();
-
-        // Create an Invoice Item with the Price, and Customer you want to charge
-        $invoceItem = InvoiceItem::create([
-            'customer' => $customerId,
-            'price' => $priceId,
-        ]);
-
-        // Create an Invoice
-        $invoce = Invoice::create([
-            'customer' => $customerId,
-            'collection_method' => 'send_invoice',
-            'days_until_due' => 14,
-        ]);
-
-        $invoce->sendInvoice();
     }
 
     public function createPriceModel(): array

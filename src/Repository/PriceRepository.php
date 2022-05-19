@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\Price;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Query\ResultSetMapping;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -21,46 +22,25 @@ class PriceRepository extends ServiceEntityRepository
         parent::__construct($registry, Price::class);
     }
 
-    public function add(Price $entity, bool $flush = false): void
+    /**
+     * @return Price[]
+     */
+    public function findPricesByProductId(string $productId): array
     {
-        $this->getEntityManager()->persist($entity);
-
-        if ($flush) {
-            $this->getEntityManager()->flush();
-        }
+//        $conn = $this->getEntityManager()->getConnection();
+//
+//        $sql = 'SELECT pr.stripe_id
+//                FROM price pr JOIN product p on p.id = pr.product_id
+//                WHERE p.stripe_id = :productId';
+//        $stmt = $conn->prepare($sql);
+//
+//        return $stmt->executeQuery(['productId' => $productId])->fetchAssociative();
+        return $this->createQueryBuilder('price')
+            ->select('price.stripeId')
+            ->innerJoin('price.product', 'product')
+            ->where('product.stripeId = :productId')
+            ->setParameter('productId', $productId)
+            ->getQuery()
+            ->getResult();
     }
-
-    public function remove(Price $entity, bool $flush = false): void
-    {
-        $this->getEntityManager()->remove($entity);
-
-        if ($flush) {
-            $this->getEntityManager()->flush();
-        }
-    }
-
-//    /**
-//     * @return Price[] Returns an array of Price objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('p')
-//            ->andWhere('p.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('p.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
-
-//    public function findOneBySomeField($value): ?Price
-//    {
-//        return $this->createQueryBuilder('p')
-//            ->andWhere('p.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
 }

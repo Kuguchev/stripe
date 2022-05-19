@@ -20,4 +20,9 @@ class ProductRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Product::class);
     }
+
+    public function findProductByName(string $productName): ?Product
+    {
+        return $this->findOneBy(['name' => $productName]);
+    }
 }

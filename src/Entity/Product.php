@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\ProductRepository;
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -31,6 +32,17 @@ class Product
      * @ORM\Column(type="string", length=255)
      */
     private string $name;
+
+    /**
+     * @ORM\OneToMany(targetEntity="Price", mappedBy="product")
+     * @var ArrayCollection | Price[]
+     */
+    private $prices;
+
+    public function __construct()
+    {
+        $this->prices = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -70,6 +82,26 @@ class Product
     {
         $this->name = $name;
 
+        return $this;
+    }
+
+    public function getPrices()
+    {
+        return $this->prices;
+    }
+
+    public function addPrice(Price $price):self
+    {
+        if (!$this->prices->contains($price)) {
+            $this->prices->add($price);
+        }
+
+        return $this;
+    }
+
+    public function removePrice(Price $price): self
+    {
+        $this->prices->removeElement($price);
         return $this;
     }
 }
