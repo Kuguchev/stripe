@@ -1,19 +1,20 @@
 <?php
 
-namespace App\Service;
+namespace App\Service\Stripe;
 
 use App\Repository\CustomerRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Stripe\Customer;
 use App\Entity\Customer as CustomerDB;
 
-class StripeCustomerService
+class StripeCustomerService extends AbstractStripeService
 {
     private CustomerRepository $customerRepository;
     private EntityManagerInterface $em;
 
     public function __construct(CustomerRepository $customerRepository, EntityManagerInterface $em)
     {
+        parent::__construct();
         $this->customerRepository = $customerRepository;
         $this->em = $em;
     }

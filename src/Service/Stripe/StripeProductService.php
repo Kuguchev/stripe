@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Service;
+namespace App\Service\Stripe;
 
+use App\Entity\Price;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Stripe\Product;
@@ -18,23 +19,33 @@ class StripeProductService
         $this->em = $em;
     }
 
-    public function createProduct(string $productName, string $description): ProductDB
+    public function createProduct(string $productName, string $description, int $price, string $currency): ProductDB
     {
         $productFromDB = $this->productRepository->findProductByName($productName);
 
         if ($productFromDB === null) {
-
             $product = Product::create([
                 'name' => $productName,
                 'description' => $description,
+                'default_price_data' => [
+                    'currency' => $currency,
+                    'unit_amount' => $price,
+                ]
             ]);
 
             $productToDB = (new ProductDB())
                 ->setStripeId($product->id)
                 ->setName($productName)
                 ->setDescription($product->description);
-
+            
+            $priceToDB = (new Price())
+                ->setStripeId($product->default_price)
+                ->setCurrency($currency)
+                ->setUnitAmount($price)
+                ->setProduct($productToDB);
+            
             $this->em->persist($productToDB);
+            $this->em->persist($priceToDB);
             $this->em->flush();
 
             return $productToDB;

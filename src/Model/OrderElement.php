@@ -2,21 +2,19 @@
 
 namespace App\Model;
 
-class ProductModel
+class OrderElement
 {
-    private string $id;
-
-    private string $price;
-
+    private string $productId;
+    
     public function getId(): string
     {
         return $this->id;
     }
-
+    
     public function setId(string $id): self
     {
         $this->id = $id;
-
+    
         return $this;
     }
 }

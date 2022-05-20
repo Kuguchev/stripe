@@ -33,6 +33,11 @@ class Price
     private string $currency;
 
     /**
+     * @ORM\Column(type="string", length=200, nullable=true)
+     */
+    private ?string $lookupkey;
+
+    /**
      * @ORM\ManyToOne(targetEntity="Product", inversedBy="prices")
      * @ORM\JoinColumn(name="product_id", referencedColumnName="id")
      */
@@ -90,4 +95,17 @@ class Price
 
         return $this;
     }
+    
+    public function getLookupkey(): ?string
+    {
+        return $this->lookupkey;
+    }
+    
+    public function setLookupkey(?string $lookupkey): self
+    {
+        $this->lookupkey = $lookupkey;
+        
+        return $this;
+    }
+    
 }

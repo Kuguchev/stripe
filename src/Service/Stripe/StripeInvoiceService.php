@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Service;
+namespace App\Service\Stripe;
 
 use Stripe\Invoice;
 use Stripe\InvoiceItem;
@@ -19,8 +19,8 @@ class StripeInvoiceService
         int $amount,
         string $currency,
         string $description,
-        int $quantity): InvoiceItem
-    {
+        int $quantity
+    ): InvoiceItem {
         // Create customer
         $customer = $this->customerService->createCustomer($customerEmail);
 

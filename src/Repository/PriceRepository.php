@@ -43,4 +43,13 @@ class PriceRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @param string $lookupkey
+     * @return Price | null
+     */
+    public function findPricesByLookupKey(string $lookupkey): ?Price
+    {
+        return $this->findOneBy(['lookupkey' => $lookupkey]);
+    }
 }

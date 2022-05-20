@@ -2,15 +2,17 @@
 
 namespace App\Model;
 
+use App\Entity\Product;
+
 class OrderModel
 {
     /**
-     * @var ProductModel[]
+     * @var OrderElement[]
      */
     private array $items;
 
     /**
-     * @return ProductModel[]
+     * @return OrderElement[]
      */
     public function getItems(): array
     {
@@ -18,7 +20,7 @@ class OrderModel
     }
 
     /**
-     * @param ProductModel[] $items
+     * @param OrderElement[] $items
      * @return OrderModel
      */
     public function setItems(array $items): self
