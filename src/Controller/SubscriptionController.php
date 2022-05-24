@@ -12,6 +12,7 @@ use Laminas\Code\Exception\RuntimeException;
 use PhpParser\Error;
 use Stripe\Subscription;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -108,6 +109,32 @@ class SubscriptionController extends AbstractController
         try {
             $subscription = $this->stripeSubscriptionService->createSubscription($request);
             return $this->json(['clientSecret' => $subscription->latest_invoice->payment_intent->client_secret]);
+        } catch (Error $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * @Route("/cancel-subscription", methods={"POST"})
+     */
+    public function cancelSubscription(Request $request): JsonResponse
+    {
+        try {
+            $subscription = $this->stripeSubscriptionService->cancelSubscription($request);
+            return $this->json($subscription);
+        } catch (Error $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    /**
+     * @Route("/update-subscription", methods={"POST"})
+     */
+    public function updateSubscription(Request $request): Response
+    {
+        try {
+            $updatedSubscription = $this->stripeSubscriptionService->updateSubscription($request);
+            return $this->json($updatedSubscription);
         } catch (Error $e) {
             return $this->json(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
         }

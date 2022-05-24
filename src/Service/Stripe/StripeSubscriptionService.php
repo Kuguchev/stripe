@@ -3,13 +3,15 @@
 namespace App\Service\Stripe;
 
 use App\Model\SubscriberModel;
+use App\Model\SubscriptionModel;
+use App\Model\UpdateSubscriptionModel;
+use Laminas\Code\Exception\RuntimeException;
 use Stripe\BillingPortal\Session as BillingPortalSession;
 use Stripe\Checkout\Session as CheckoutSession;
 use Stripe\Price;
 use Stripe\Subscription;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\SerializerInterface;
-use Symfony\Flex\Response;
 
 class StripeSubscriptionService extends AbstractStripeService
 {
@@ -70,19 +72,33 @@ class StripeSubscriptionService extends AbstractStripeService
             'expand' => ['latest_invoice.payment_intent'],
         ]);
     }
-    
-    public function updateSubscription(string $subscriptionId, string $newPriceId)
+
+    public function updateSubscription(Request $request)
     {
-        $subscription = Subscription::retrieve($subscriptionId);
-        Subscription::update($subscriptionId, [
+        /** @var UpdateSubscriptionModel $model */
+        $model = $this->serializer->deserialize($request->getContent(), UpdateSubscriptionModel::class, 'json');
+        $subscription = Subscription::retrieve($model->getSubscriptionId());
+
+        return Subscription::update($model->getSubscriptionId(), [
             'cancel_at_period_end' => false,
             'proration_behavior' => 'create_prorations',
             'items' => [
                 [
-                    'id' => $subscription->items->data,
-                    'price' => $newPriceId,
+                    'id' => $subscription->items->data[0]->id,
+                    'price' => $model->getPriceId(),
                 ]
             ],
         ]);
+    }
+
+    public function cancelSubscription(Request $request): Subscription
+    {
+        /** @var SubscriptionModel $subscriptionData */
+        $subscriptionData = $this->serializer->deserialize($request->getContent(), SubscriptionModel::class, 'json');
+
+        $subscription = Subscription::retrieve($subscriptionData->getSubscriptionId());
+        $subscription->delete();
+
+        return $subscription;
     }
 }
