@@ -27,7 +27,7 @@ class StripeCustomerService extends AbstractStripeService
             // Create a new Customer
             $customer = Customer::create([
                 'email' => $email,
-                'description' => 'Customer to invoice',
+                //'description' => 'Customer to invoice',
             ]);
 
             $customerToDB = (new CustomerDB)

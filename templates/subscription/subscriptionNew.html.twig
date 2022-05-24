@@ -1,0 +1,33 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Subscribe to a cool new product{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('css/stripe/checkout.css') }}" />
+{% endblock %}
+
+{% block body %}
+    <!-- Display a payment form -->
+    <form id="payment-form">
+        <div id="payment-element">
+            <!--Stripe.js injects the Payment Element-->
+        </div>
+        <button id="submit">
+            <div class="spinner hidden" id="spinner"></div>
+            <span id="button-text">Pay now</span>
+        </button>
+        <div id="payment-message" class="hidden"></div>
+    </form>
+{% endblock %}
+
+{% block javascripts %}
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        const stripe = Stripe("{{ pk_test }}");
+
+        // The item the customer wants to subscribe
+        let priceId = "{{ priceId }}";
+        let customerId = "{{ customerId }}";
+    </script>
+    <script src="{{ asset('js/stripe/subscriptionCheckout.js') }}" defer></script>
+{% endblock %}

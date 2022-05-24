@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\CustomerRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * @ORM\Entity(repositoryClass=CustomerRepository::class)
@@ -24,6 +25,7 @@ class Customer
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Assert\Email()
      */
     private string $email;
 

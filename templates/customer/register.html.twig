@@ -1,0 +1,26 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Customer registration!{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('css/stripe/style.css') }}">
+{% endblock %}
+
+{% block body %}
+
+    {{ form_start(form, {'attr': {'novalidate': 'novalidate', 'id': 'payment-form'}}) }}
+    <label>
+        Email
+        {{ form_widget(form.email, {'attr': {'id': 'email', 'placeholder': 'Email address', 'value': 'test@example.com'}}) }}
+        {{ form_errors(form.email) }}
+        {{ form_help(form.email) }}
+    </label>
+    <button type="submit">
+        Register
+    </button>
+    {{ form_end(form) }}
+
+{% endblock %}
+{% block javascripts %}
+
+{% endblock %}
